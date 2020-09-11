@@ -1,4 +1,5 @@
 <?php
+
 namespace careyshop;
 
 use think\exception\HttpResponseException;
@@ -20,24 +21,31 @@ trait Jump
     protected $app;
 
     /**
+     * 模板路径
+     * @var string
+     */
+    protected $tplPath;
+
+    /**
      * 构造方法
      * @access public
-     * @param  App  $app  应用对象
+     * @param App $app 应用对象
      */
     public function __construct(App $app)
     {
-        $this->app     = $app;
+        $this->app = $app;
         $this->request = $this->app->request;
+        $this->tplPath = __DIR__ . DIRECTORY_SEPARATOR . 'tpl' . DIRECTORY_SEPARATOR . 'dispatch_jump.tpl';
     }
 
     /**
      * 操作成功跳转的快捷方法
      * @access protected
-     * @param  mixed $msg 提示信息
-     * @param  string $url 跳转的URL地址
-     * @param  mixed $data 返回的数据
-     * @param  integer $wait 跳转等待时间
-     * @param  array $header 发送的Header信息
+     * @param mixed       $msg    提示信息
+     * @param string|null $url    跳转的URL地址
+     * @param mixed       $data   返回的数据
+     * @param integer     $wait   跳转等待时间
+     * @param array       $header 发送的Header信息
      * @return void
      */
     protected function success($msg = '', string $url = null, $data = '', int $wait = 3, array $header = [])
@@ -49,18 +57,18 @@ trait Jump
         }
 
         $result = [
-            'code' => 1,
-            'msg' => $msg,
-            'data' => $data,
-            'url' => $url,
-            'wait' => $wait,
+            'status'  => 200,
+            'message' => $msg,
+            'data'    => $data,
+            'url'     => $url,
+            'wait'    => $wait,
         ];
 
         $type = $this->getResponseType();
         // 把跳转模板的渲染下沉，这样在 response_send 行为里通过getData()获得的数据是一致性的格式
         if ('html' == strtolower($type)) {
             $type = 'view';
-            $response = Response::create($this->app->config->get('jump.dispatch_success_tmpl'), $type)->assign($result)->header($header);
+            $response = Response::create($this->tplPath, $type)->assign($result)->header($header);
         } else {
             $response = Response::create($result, $type)->header($header);
         }
@@ -71,11 +79,11 @@ trait Jump
     /**
      * 操作错误跳转的快捷方法
      * @access protected
-     * @param  mixed $msg 提示信息
-     * @param  string $url 跳转的URL地址
-     * @param  mixed $data 返回的数据
-     * @param  integer $wait 跳转等待时间
-     * @param  array $header 发送的Header信息
+     * @param mixed       $msg    提示信息
+     * @param string|null $url    跳转的URL地址
+     * @param mixed       $data   返回的数据
+     * @param integer     $wait   跳转等待时间
+     * @param array       $header 发送的Header信息
      * @return void
      */
     protected function error($msg = '', string $url = null, $data = '', int $wait = 3, array $header = [])
@@ -87,18 +95,18 @@ trait Jump
         }
 
         $result = [
-            'code' => 0,
-            'msg' => $msg,
-            'data' => $data,
-            'url' => $url,
-            'wait' => $wait,
+            'status'  => 500,
+            'message' => $msg,
+            'data'    => $data,
+            'url'     => $url,
+            'wait'    => $wait,
         ];
 
         $type = $this->getResponseType();
 
         if ('html' == strtolower($type)) {
             $type = 'view';
-            $response = Response::create($this->app->config->get('jump.dispatch_error_tmpl'), $type)->assign($result)->header($header);
+            $response = Response::create($this->tplPath, $type)->assign($result)->header($header);
         } else {
             $response = Response::create($result, $type)->header($header);
         }
@@ -109,20 +117,20 @@ trait Jump
     /**
      * 返回封装后的API数据到客户端
      * @access protected
-     * @param  mixed $data 要返回的数据
-     * @param  integer $code 返回的code
-     * @param  mixed $msg 提示信息
-     * @param  string $type 返回数据格式
-     * @param  array $header 发送的Header信息
+     * @param mixed   $data   要返回的数据
+     * @param integer $code   返回的code
+     * @param mixed   $msg    提示信息
+     * @param string  $type   返回数据格式
+     * @param array   $header 发送的Header信息
      * @return void
      */
     protected function result($data, $code = 0, $msg = '', $type = '', array $header = [])
     {
         $result = [
-            'code' => $code,
-            'msg' => $msg,
-            'time' => time(),
-            'data' => $data,
+            'status'  => $code,
+            'message' => $msg,
+            'time'    => time(),
+            'data'    => $data,
         ];
 
         $type = $type ?: $this->getResponseType();
@@ -134,9 +142,9 @@ trait Jump
     /**
      * URL重定向
      * @access protected
-     * @param  string $url 跳转的URL表达式
-     * @param  integer $code http code
-     * @param  array $with 隐式传参
+     * @param string  $url  跳转的URL表达式
+     * @param integer $code http code
+     * @param array   $with 隐式传参
      * @return void
      */
     protected function redirect($url, $code = 302, $with = [])
